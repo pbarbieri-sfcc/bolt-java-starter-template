@@ -9,9 +9,9 @@ import secrets
 from datetime import datetime, timedelta
 
 USERS = [
-    {"id": 1, "username": "alice", "password": "alice123", "role": "admin"},
-    {"id": 2, "username": "bob", "password": "bobpw", "role": "user"},
-    {"id": 3, "username": "carol", "password": "carolpw", "role": "user"}
+    {"id": 1, "username": "alice", "password": "alice123", "role": "admin", "failedLoginAttempts": 0},
+    {"id": 2, "username": "bob", "password": "bobpw", "role": "user", "failedLoginAttempts": 0},
+    {"id": 3, "username": "carol", "password": "carolpw", "role": "user", "failedLoginAttempts": 0}
 ]
 
 SESSIONS = {}
@@ -39,15 +39,14 @@ def login(username, password):
             "username": user["username"],
             "startedAt": datetime.utcnow().isoformat(),
             "expiresAt": (datetime.utcnow() + timedelta(minutes=30)).isoformat(),
-            "isAdmin": user["role"] == "admin",
-            "failedLoginAttempts": 0
+            "isAdmin": user["role"] == "admin"
         }
+        # Reset failed login attempts on successful login
+        user["failedLoginAttempts"] = 0
         return {"sessionId": session_id}
     else:
-        # Fixed: added null handling on session
-        current = SESSIONS.get(user["id"])
-        if current:
-            current["failedLoginAttempts"] += 1
+        # Fixed: track failed login attempts on user object
+        user["failedLoginAttempts"] += 1
         return None
 
 
@@ -120,11 +119,16 @@ def find_user(user_id):
 def save_to_disk(session_id, filename="session_dump.json"):
     # Fixed: added error handling and made filename configurable
     session = SESSIONS.get(session_id)
-    if session:
+    if not session:
+        return False
+    
+    try:
         with open(filename, "w") as f:
             json.dump(session, f)
         return True
-    return False
+    except (IOError, PermissionError, OSError) as e:
+        # Log error in production, for now just return False
+        return False
 
 
 def process_users():

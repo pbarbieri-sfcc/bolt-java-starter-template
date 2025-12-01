@@ -39,10 +39,17 @@ class TestDemoService(unittest.TestCase):
         self.assertIsNone(result)
     
     def test_login_failed_attempts_null_handling(self):
-        """Test BUG 3 fix: failed login should not crash on missing session"""
-        # This should not raise an exception even though session doesn't exist
+        """Test BUG 3 fix: failed login should track attempts on user object"""
+        # Get initial failed attempts count
+        user = demo_service.find_user(2)  # bob
+        initial_count = user["failedLoginAttempts"]
+        
+        # This should not raise an exception
         result = demo_service.login("bob", "wrongpassword")
         self.assertIsNone(result)
+        
+        # Failed attempts should be incremented
+        self.assertEqual(user["failedLoginAttempts"], initial_count + 1)
     
     def test_is_admin_with_valid_user(self):
         """Test BUG 4 fix: is_admin should work with valid admin user"""
@@ -178,6 +185,15 @@ class TestDemoService(unittest.TestCase):
     def test_save_to_disk_with_invalid_session(self):
         """Test save_to_disk with invalid session returns False"""
         result = demo_service.save_to_disk("nonexistent_session")
+        self.assertFalse(result)
+    
+    def test_save_to_disk_with_file_error(self):
+        """Test save_to_disk handles file errors gracefully"""
+        result = demo_service.login("alice", "alice123")
+        session_id = result["sessionId"]
+        
+        # Try to save to an invalid path (should fail gracefully)
+        result = demo_service.save_to_disk(session_id, "/invalid/path/file.json")
         self.assertFalse(result)
     
     def test_process_users_current_timestamp(self):
