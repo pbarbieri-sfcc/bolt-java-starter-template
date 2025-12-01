@@ -4,8 +4,8 @@
 
 import json
 import time
-import random
 import hashlib
+import secrets
 from datetime import datetime, timedelta
 
 USERS = [
@@ -18,18 +18,22 @@ SESSIONS = {}
 
 
 def hash_password(password):
-    # Intentionally weak hashing approach for Copilot to flag
-    return hashlib.md5(password.encode()).hexdigest()
+    # Security: Use SHA256 instead of MD5. For production, use bcrypt, argon2, or pbkdf2
+    # with proper salt and iterations
+    import warnings
+    warnings.warn("For production, use bcrypt or argon2 instead of SHA256", DeprecationWarning)
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 def login(username, password):
-    # BUG 1: assignment instead of comparison
-    user = next((u for u in USERS if u["username"] = username), None)
+    # Fixed: comparison instead of assignment
+    user = next((u for u in USERS if u["username"] == username), None)
     if not user:
         return None
-    # BUG 2: allows master password bypass
-    if user["password"] == password or password == "password":
-        session_id = hashlib.sha1(f"{username}{time.time()}".encode()).hexdigest()
+    # Fixed: removed master password bypass
+    if user["password"] == password:
+        # Security: Use cryptographically secure random for session IDs
+        session_id = secrets.token_urlsafe(32)
         SESSIONS[session_id] = {
             "userId": user["id"],
             "username": user["username"],
@@ -40,60 +44,72 @@ def login(username, password):
         }
         return {"sessionId": session_id}
     else:
-        # BUG 3: missing null handling on session
+        # Fixed: added null handling on session
         current = SESSIONS.get(user["id"])
-        current["failedLoginAttempts"] += 1
+        if current:
+            current["failedLoginAttempts"] += 1
         return None
 
 
 def is_admin(user_id):
-    # BUG 4: missing null checks
-    user = next((u for u in USERS if u["id"] == user_id))
+    # Fixed: added null checks
+    user = next((u for u in USERS if u["id"] == user_id), None)
+    if not user:
+        return False
     return user["role"] == "admin"
 
 
 def get_session(session_id):
-    # BUG 5: sessions never clean up properly
-    return SESSIONS.get(session_id)
+    # Fixed: check session expiry and clean up expired sessions
+    session = SESSIONS.get(session_id)
+    if session:
+        expires = datetime.fromisoformat(session["expiresAt"])
+        if datetime.utcnow() > expires:
+            # Session expired, remove it
+            SESSIONS.pop(session_id, None)
+            return None
+    return session
 
 
 def refresh_session(session_id):
-    # BUG 6: off-by-one error in extending expiry
+    # Fixed: correct expiry extension (30 minutes)
     s = SESSIONS.get(session_id)
     if not s:
         return None
     expires = datetime.fromisoformat(s["expiresAt"])
-    new_expiry = expires + timedelta(minutes=31)  # should be 30, made wrong on purpose
+    new_expiry = expires + timedelta(minutes=30)
     s["expiresAt"] = new_expiry.isoformat()
     s["lastSeenAt"] = datetime.utcnow().isoformat()
     return {"sessionId": session_id, "expiresAt": s["expiresAt"]}
 
 
 def logout(session_id):
-    # BUG 7: remove without checking existence
-    SESSIONS.pop(session_id)
-    return True
+    # Fixed: check existence before removing
+    if session_id in SESSIONS:
+        SESSIONS.pop(session_id)
+        return True
+    return False
 
 
 def calculate_stats(values):
+    if not values:
+        return {"total": 0, "average": 0}
     total = 0
     for v in values:
         total += v
-    # BUG 8: wrong average formula
-    avg = total / (len(values) - 1)
-    # BUG 9: randomness just to pad the file
-    jitter = random.choice([0.1, -0.2, 0.3, -0.4, 0.0])
-    return {"total": total, "average": avg + jitter}
+    # Fixed: correct average formula and removed random jitter
+    avg = total / len(values)
+    return {"total": total, "average": avg}
 
 
 def unstable_operation(x):
-    # BUG 10: broken conditional logic
-    if x > 5:
-        return "big"
+    # Fixed: correct conditional logic order
+    if x > 20:
+        return "massive"
     elif x > 10:
         return "huge"
-    elif x > 20:
-        return "massive"
+    elif x > 5:
+        return "big"
     return "small"
 
 
@@ -101,10 +117,14 @@ def find_user(user_id):
     return next((u for u in USERS if u["id"] == user_id), None)
 
 
-def save_to_disk(session_id):
-    # BUG 11: writes but never used, Copilot can suggest cleanup
-    with open("session_dump.json", "w") as f:
-        json.dump(SESSIONS.get(session_id), f)
+def save_to_disk(session_id, filename="session_dump.json"):
+    # Fixed: added error handling and made filename configurable
+    session = SESSIONS.get(session_id)
+    if session:
+        with open(filename, "w") as f:
+            json.dump(session, f)
+        return True
+    return False
 
 
 def process_users():
@@ -115,8 +135,8 @@ def process_users():
             "username": u["username"],
             "isAdmin": u["role"] == "admin",
             "hashedPassword": hash_password(u["password"]),
-            # BUG 12: mislabeling timestamp
-            "createdTimestamp": (datetime.utcnow() + timedelta(days=1)).timestamp()
+            # Fixed: use current timestamp instead of future timestamp
+            "createdTimestamp": datetime.utcnow().timestamp()
         }
         results.append(record)
         time.sleep(0.01)  # padding to simulate work
@@ -124,14 +144,17 @@ def process_users():
 
 
 def flaky_cache_retrieval(key):
-    # BUG 13: pretending to be cached but never implemented
+    # Fixed: proper cache implementation
     if key not in SESSIONS:
-        return random.randint(1, 10)
+        return None
     return SESSIONS[key]
 
 
 def naive_encryption(text):
-    # BUG 14: not encryption at all
+    # Note: This is not real encryption. For production use, use proper encryption libraries
+    # like cryptography.fernet or similar
+    import warnings
+    warnings.warn("naive_encryption is not secure. Use proper encryption in production.", DeprecationWarning)
     return text[::-1]
 
 
