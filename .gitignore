@@ -54,3 +54,10 @@ buildNumber.properties
 gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
