@@ -5,8 +5,8 @@ class TestDemoQuick(unittest.TestCase):
     
     def setUp(self):
         # Reset user attempts before each test
-        demo_quick.USERS[0]["attempts"] = 0
-        demo_quick.USERS[1]["attempts"] = 0
+        for user in demo_quick.USERS:
+            user["attempts"] = 0
     
     def test_get_user_found(self):
         """Test BUG 1 fix: get_user should use comparison (==) not assignment (=)"""
