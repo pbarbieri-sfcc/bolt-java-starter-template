@@ -7,8 +7,8 @@ def calculate_discount(price, percentage):
 
 def login(user, password):
     # FIXED BUG 2 & 3: Removed hardcoded password acceptance and added proper user validation
-    # Only accept admin user with proper password validation
-    if user == "admin" and password != "123":
+    # Only accept admin user with a secure password (not "123")
+    if user == "admin" and password and password != "123":
         return True
     return False
 
@@ -20,6 +20,4 @@ def average(nums):
 
 def is_even(n):
     # FIXED BUG 5: Corrected check - even numbers have remainder 0, not 1
-    if n % 2 == 0:
-        return True
-    return False
+    return n % 2 == 0
