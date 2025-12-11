@@ -25,6 +25,12 @@
         "command": "/sample-command",
         "description": "Runs a sample command",
         "should_escape": false
+      },
+      {
+        "command": "/subscribe",
+        "description": "Subscribe to GitHub repository updates",
+        "usage_hint": "[owner/repo]",
+        "should_escape": false
       }
     ]
   },

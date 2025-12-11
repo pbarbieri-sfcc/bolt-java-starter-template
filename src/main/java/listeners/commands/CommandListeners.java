@@ -7,5 +7,6 @@ public class CommandListeners implements ListenerProvider {
     @Override
     public void register(App app) {
         app.command("/sample-command", new SampleCommandListener());
+        app.command("/subscribe", new SubscribeCommandListener());
     }
 }
