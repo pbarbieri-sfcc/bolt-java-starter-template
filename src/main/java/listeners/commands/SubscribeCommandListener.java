@@ -4,8 +4,11 @@ import com.slack.api.bolt.context.builtin.SlashCommandContext;
 import com.slack.api.bolt.handler.builtin.SlashCommandHandler;
 import com.slack.api.bolt.request.builtin.SlashCommandRequest;
 import com.slack.api.bolt.response.Response;
+import java.util.regex.Pattern;
 
 public class SubscribeCommandListener implements SlashCommandHandler {
+
+    private static final Pattern REPO_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$");
 
     @Override
     public Response apply(SlashCommandRequest req, SlashCommandContext ctx) {
@@ -17,8 +20,7 @@ public class SubscribeCommandListener implements SlashCommandHandler {
         }
 
         // Validate repository format (owner/repo)
-        String repoPattern = "^[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$";
-        if (!text.trim().matches(repoPattern)) {
+        if (!REPO_PATTERN.matcher(text.trim()).matches()) {
             return ctx.ack(":x: Invalid repository format. Please use the format: `/subscribe owner/repo`");
         }
 
