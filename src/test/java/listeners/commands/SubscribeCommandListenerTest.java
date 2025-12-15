@@ -85,4 +85,22 @@ public class SubscribeCommandListenerTest {
         assertTrue(res.getBody().contains("Successfully subscribed"));
         assertTrue(res.getBody().contains("my-project.io"));
     }
+
+    @Test
+    public void testApplyWithRepositoryStartingWithInvalidChar() {
+        // Given
+        var reqMock = mock(SlashCommandRequest.class);
+        var payloadMock = mock(SlashCommandPayload.class);
+        var ctxMock = spy(SlashCommandContext.class);
+
+        when(reqMock.getPayload()).thenReturn(payloadMock);
+        when(payloadMock.getText()).thenReturn("owner/-invalid-repo");
+
+        // When
+        var subscribeCommandListener = new SubscribeCommandListener();
+        var res = subscribeCommandListener.apply(reqMock, ctxMock);
+
+        // Then
+        assertTrue(res.getBody().contains("Invalid repository format"));
+    }
 }

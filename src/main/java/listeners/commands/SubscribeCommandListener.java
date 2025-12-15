@@ -8,7 +8,8 @@ import java.util.regex.Pattern;
 
 public class SubscribeCommandListener implements SlashCommandHandler {
 
-    private static final Pattern REPO_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$");
+    private static final Pattern REPO_PATTERN =
+            Pattern.compile("^[a-zA-Z0-9][a-zA-Z0-9._-]*/[a-zA-Z0-9][a-zA-Z0-9._-]*$");
 
     @Override
     public Response apply(SlashCommandRequest req, SlashCommandContext ctx) {
