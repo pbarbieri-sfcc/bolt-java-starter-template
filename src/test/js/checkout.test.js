@@ -14,7 +14,9 @@ function assertEquals(actual, expected, message) {
 }
 
 // Import the function (for Node.js)
-const { calculateTotal } = require('../../main/resources/static/js/checkout.js');
+const path = require('path');
+const checkoutPath = path.join(__dirname, '../../main/resources/static/js/checkout.js');
+const { calculateTotal } = require(checkoutPath);
 
 // Test 1: Basic calculation without discount
 function testBasicCalculation() {
