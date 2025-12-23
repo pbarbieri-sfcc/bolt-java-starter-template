@@ -23,11 +23,9 @@ function login(username, password) {
    - Username "admin" and password "admin123" hardcoded in source
    - Cannot be changed without code modification
    - Permanently exposed in version control history
-
 2. **CWE-259: Use of Hard-coded Password**
    - Password visible to anyone with source code access
    - Violates OWASP and NIST guidelines
-
 3. **CWE-916: Use of Password Hash With Insufficient Computational Effort**
    - No password hashing whatsoever
    - Plain text comparison exposes passwords
@@ -37,11 +35,9 @@ function login(username, password) {
 4. **CWE-208: Observable Timing Discrepancy**
    - Short-circuit evaluation allows timing attacks
    - Can enumerate valid usernames through timing analysis
-
 5. **CWE-521: Weak Password Requirements**
    - "admin123" is a common, easily guessed password
    - No complexity requirements enforced
-
 6. **No Rate Limiting**
    - Unlimited brute force attempts possible
    - No account lockout mechanism
@@ -97,15 +93,18 @@ All 8 tests passing (6 security tests + 2 existing tests)
 ## Security Compliance
 
 ### OWASP Compliance
+
 - ✅ A02:2021 – Cryptographic Failures (addressed)
 - ✅ A07:2021 – Identification and Authentication Failures (addressed)
 
 ### NIST Guidelines
+
 - ✅ NIST SP 800-63B compliant password hashing
 - ✅ Proper key derivation function (PBKDF2)
 - ✅ Adequate iteration count (10,000+)
 
 ### CWE Coverage
+
 - ✅ CWE-798: Hard-coded credentials (fixed)
 - ✅ CWE-259: Hard-coded password (fixed)
 - ✅ CWE-916: Insufficient computational effort (fixed)
@@ -135,19 +134,16 @@ For production deployment:
    - Use secure secret management (AWS Secrets Manager, HashiCorp Vault, etc.)
    - Rotate credentials regularly
    - Never commit credentials to source control
-
 2. **Password Policy:**
    - Enforce minimum 12+ character length
    - Require complexity (uppercase, lowercase, numbers, symbols)
    - Check against common password lists
    - Consider password expiration for sensitive systems
-
 3. **Enhanced Security:**
    - Implement multi-factor authentication (MFA)
    - Use distributed cache (Redis) for rate limiting in production
    - Log all authentication attempts for security monitoring
    - Consider upgrading to BCrypt or Argon2 for better GPU resistance
-
 4. **Infrastructure:**
    - Always use HTTPS/TLS
    - Implement CSRF protection
@@ -167,3 +163,4 @@ For production deployment:
 - ✅ Code review completed and addressed
 - ✅ CodeQL security scan: 0 vulnerabilities
 - ✅ Spotless linter: all files clean
+
