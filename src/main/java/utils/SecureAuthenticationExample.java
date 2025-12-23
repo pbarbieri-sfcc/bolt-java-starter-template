@@ -1,7 +1,6 @@
 package utils;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -37,6 +36,8 @@ public class SecureAuthenticationExample {
     private final String storedSalt;
 
     // Track failed login attempts (in production, use a distributed cache like Redis)
+    // TODO: Implement periodic cleanup of old entries to prevent memory leaks
+    // TODO: In production, use Redis, Memcached, or database with TTL for persistence
     private final Map<String, FailedAttempt> failedAttempts = new ConcurrentHashMap<>();
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -124,9 +125,9 @@ public class SecureAuthenticationExample {
     /**
      * Constant-time comparison to prevent timing attacks.
      *
-     * This method always compares all bytes, regardless of whether
-     * differences are found early in the comparison. This prevents
-     * attackers from learning about the stored value through timing analysis.
+     * This method always compares the maximum length to prevent timing attacks
+     * based on length differences. It pads the shorter array conceptually by
+     * XORing with zeros when one array is shorter.
      *
      * @param a First byte array
      * @param b Second byte array
@@ -137,44 +138,48 @@ public class SecureAuthenticationExample {
             return a == b;
         }
 
-        // If lengths differ, still perform comparison to maintain constant time
-        int length = Math.min(a.length, b.length);
-        int result = a.length ^ b.length;
+        // Always iterate the maximum length to prevent timing attacks
+        int maxLength = Math.max(a.length, b.length);
+        int result = a.length ^ b.length; // Capture length difference
 
-        for (int i = 0; i < length; i++) {
-            result |= a[i] ^ b[i];
+        for (int i = 0; i < maxLength; i++) {
+            // Use 0 if index is out of bounds for either array
+            int aVal = (i < a.length) ? (a[i] & 0xFF) : 0;
+            int bVal = (i < b.length) ? (b[i] & 0xFF) : 0;
+            result |= aVal ^ bVal;
         }
 
         return result == 0;
     }
 
     /**
-     * Hash a password with a salt using PBKDF2.
+     * Hash a password with a salt using PBKDF2 with HMAC-SHA256.
      *
-     * In production, consider using BCrypt, SCrypt, or Argon2 instead,
-     * as they are specifically designed for password hashing and include
-     * built-in salting and adaptive cost factors.
+     * PBKDF2 is recommended by NIST for password hashing and is widely supported.
+     * For new applications, consider BCrypt, SCrypt, or Argon2 which have better
+     * resistance to parallel attacks, but PBKDF2 is a solid choice and widely available.
      *
      * @param password The plain text password
      * @param salt The salt (as base64 string)
      * @return The hashed password as a base64 string
-     * @throws NoSuchAlgorithmException if SHA-256 is not available
+     * @throws NoSuchAlgorithmException if PBKDF2WithHmacSHA256 is not available
      */
     private String hashPassword(String password, String salt) throws NoSuchAlgorithmException {
-        byte[] saltBytes = Base64.getDecoder().decode(salt);
+        try {
+            byte[] saltBytes = Base64.getDecoder().decode(salt);
 
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        digest.update(saltBytes);
+            javax.crypto.spec.PBEKeySpec spec =
+                    new javax.crypto.spec.PBEKeySpec(password.toCharArray(), saltBytes, HASH_ITERATIONS, 256);
 
-        byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
 
-        // Multiple iterations to slow down brute force attacks
-        for (int i = 1; i < HASH_ITERATIONS; i++) {
-            digest.reset();
-            hash = digest.digest(hash);
+            byte[] hash = factory.generateSecret(spec).getEncoded();
+            spec.clearPassword(); // Clear sensitive data
+
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (java.security.spec.InvalidKeySpecException e) {
+            throw new RuntimeException("Invalid key specification for password hashing", e);
         }
-
-        return Base64.getEncoder().encodeToString(hash);
     }
 
     /**

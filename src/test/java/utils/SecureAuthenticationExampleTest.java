@@ -127,11 +127,28 @@ public class SecureAuthenticationExampleTest {
         private final SecureAuthenticationExample delegate;
 
         public TestableSecureAuth() {
-            // Set temporary environment variables for testing
-            System.setProperty("ADMIN_USERNAME", "test");
-            System.setProperty("ADMIN_PASSWORD_HASH", "test");
-            System.setProperty("ADMIN_PASSWORD_SALT", "test");
-            this.delegate = new SecureAuthenticationExample();
+            try {
+                // Set realistic test environment variables
+                // Generate a real hash for testing to ensure proper validation
+                SecureAuthenticationExample tempAuth = createTempAuthForSetup();
+                PasswordHashResult testCreds = tempAuth.hashPasswordWithNewSalt("TestPassword123!");
+
+                System.setProperty("ADMIN_USERNAME", "testadmin");
+                System.setProperty("ADMIN_PASSWORD_HASH", testCreds.getHash());
+                System.setProperty("ADMIN_PASSWORD_SALT", testCreds.getSalt());
+
+                this.delegate = new SecureAuthenticationExample();
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Failed to initialize test auth", e);
+            }
+        }
+
+        private SecureAuthenticationExample createTempAuthForSetup() {
+            // Temporarily set dummy values to create an instance for password hashing
+            System.setProperty("ADMIN_USERNAME", "temp");
+            System.setProperty("ADMIN_PASSWORD_HASH", "dGVtcA=="); // base64 "temp"
+            System.setProperty("ADMIN_PASSWORD_SALT", "dGVtcA=="); // base64 "temp"
+            return new SecureAuthenticationExample();
         }
 
         public PasswordHashResult hashPasswordWithNewSalt(String password) throws NoSuchAlgorithmException {
